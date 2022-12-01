@@ -5,19 +5,26 @@ const server = http.createServer(app);
 const { Server } = require("socket.io");
 const io = new Server(server);
 
+const users = {};
+
 // Create a new connection
 io.on("connection", (socket) => {
-  console.log("A user is connected.");
+  socket.on("new-user", (userName) => {
+    users[socket.id] = userName;
+    socket.broadcast.emit("user-connected", userName);
+  });
+
+  socket.on("send-chat-message", (message) => {
+    socket.broadcast.emit("chat-message", {
+      message: message,
+      name: users[socket.id],
+    });
+  });
 
   socket.on("disconnect", () => {
-    console.log("A user is disconnected.");
+    socket.broadcast.emit("user-disconnected", users[socket.id]);
+    delete users[socket.id];
   });
-
-  socket.on("chat-message", (msg) => {
-    console.log("client message: " + msg);
-  });
-
-  socket.emit("server", "Message from server");
 });
 
 app.get("/", (req, res) => {
