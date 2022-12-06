@@ -10,15 +10,29 @@ const users = {};
 // Create a new connection
 io.on("connection", (socket) => {
   socket.on("new-user", (userName) => {
+    console.log(userName)
     users[socket.id] = userName;
     socket.broadcast.emit("user-connected", userName);
   });
 
-  socket.on("send-chat-message", (message) => {
+  socket.on("send-chat-message", (messageData) => {
+    if (messageData.room!=="") {
+      socket.to(messageData.room).emit("chat-message", {
+        message: messageData.message,
+        name: users[socket.id],
+      });
+      return;
+    }
+
     socket.broadcast.emit("chat-message", {
-      message: message,
+      message: messageData.message,
       name: users[socket.id],
     });
+  });
+
+  socket.on("join-room", (room) => {
+    console.log(users)
+    socket.join(room);
   });
 
   socket.on("disconnect", () => {
@@ -27,7 +41,7 @@ io.on("connection", (socket) => {
   });
 });
 
-app.get("/", (req, res) => {
+app.get("/", (req, res) => {~
   res.sendFile(__dirname + "/index.html");
 });
 

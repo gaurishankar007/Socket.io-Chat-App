@@ -16,29 +16,46 @@
           Helvetica, Arial, sans-serif;
       }
 
-      #form {
-        background: lightskyblue;
-        padding: 0.25rem;
+      #formContainer {
         position: fixed;
         bottom: 0;
         left: 0;
         right: 0;
+      }
+
+      #form {
+        background: lightskyblue;
+        padding: 0.25rem;
+        margin-bottom: 0.5rem;
         display: flex;
         height: 3rem;
         box-sizing: border-box;
         backdrop-filter: blur(10px);
       }
-      #input {
+
+      #roomForm {
+        background: lightgreen;
+        padding: 0.25rem;
+        display: flex;
+        height: 3rem;
+        box-sizing: border-box;
+        backdrop-filter: blur(10px);
+      }
+
+      #input,
+      #roomInput {
         border: none;
         padding: 0 1rem;
         flex-grow: 1;
         border-radius: 2rem;
         margin: 0.25rem;
       }
-      #input:focus {
+      #input:focus,
+      #roomInput:focus {
         outline: none;
       }
-      #form > button {
+      #form > button,
+      #roomForm > button {
         background: blue;
         border: none;
         padding: 0 1rem;
@@ -84,12 +101,17 @@
     </style>
   </head>
   <body>
-    <div id="message-container">
+    <div id="message-container"></div>
+    <div id="formContainer">
+      <form id="form" action="">
+        <input id="input" autocomplete="off" />
+        <button type="submit">Send</button>
+      </form>
+      <form id="roomForm" action="">
+        <input id="roomInput" autocomplete="off" />
+        <button type="submit">Join</button>
+      </form>
     </div>
-    <form id="form" action="">
-      <input id="input" autocomplete="off" />
-      <button type="submit">Send</button>
-    </form>
   </body>
   <script src="/socket.io/socket.io.js"></script>
   <script>
@@ -98,6 +120,8 @@
     const messageContainer = document.getElementById("message-container");
     const messageForm = document.getElementById("form");
     const messageInput = document.getElementById("input");
+    const roomForm = document.getElementById("roomForm");
+    const roomInput = document.getElementById("roomInput");
 
     const userName = prompt("What is your name?");
     userConnection(`You joined as ${userName ?? "Guest"}.`);
@@ -119,8 +143,21 @@
       e.preventDefault();
       const message = messageInput.value;
       appendMyMessage(`You: ${message}`);
-      socket.emit("send-chat-message", message);
+      socket.emit("send-chat-message", {
+        message: message,
+        room: roomInput.value,
+      });
       messageInput.value = "";
+    });
+
+    roomForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const room = roomInput.value;
+      if (roomInput.value === "") {
+        return;
+      }
+      socket.emit("join-room", room);
+      userConnection(`You joined room: ${roomInput.value}.`);
     });
 
     function userConnection(message) {
